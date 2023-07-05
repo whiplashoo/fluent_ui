@@ -607,6 +607,10 @@ class _TopNavigationPaneState extends State<_TopNavigationPane> {
         showTextOnTop: !widget.pane.footerItems.contains(item),
         displayMode: PaneDisplayMode.top,
       );
+    } else if (item is CustomPaneItem) {
+      return item.build(
+        context,
+      );
     } else {
       throw UnsupportedError(
         '${item.runtimeType} is not a supported navigation pane item type.',
@@ -666,7 +670,7 @@ class _TopNavigationPaneState extends State<_TopNavigationPane> {
   Widget build(BuildContext context) {
     assert(debugCheckHasFluentTheme(context));
     final view = InheritedNavigationView.of(context);
-    final height = widget.pane.size?.topHeight ?? kOneLineTileHeight;
+    final height = widget.pane.size?.topHeight ?? kOneLineTileHeight / 2;
     return SizedBox(
       key: widget.pane.paneKey,
       height: height,
@@ -1070,6 +1074,10 @@ class _CompactNavigationPane extends StatelessWidget {
           pane.changeTo(item);
         },
       );
+    } else if (item is CustomPaneItem) {
+      return item.build(
+        context,
+      );
     } else {
       throw UnsupportedError(
         '${item.runtimeType} is not a supported pane item type.',
@@ -1201,6 +1209,10 @@ class _OpenNavigationPane extends StatefulWidget {
           pane.changeTo(item);
           onChanged?.call();
         },
+      );
+    } else if (item is CustomPaneItem) {
+      return item.build(
+        context,
       );
     } else {
       throw UnsupportedError(

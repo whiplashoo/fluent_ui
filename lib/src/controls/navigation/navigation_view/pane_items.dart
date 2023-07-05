@@ -16,6 +16,22 @@ class NavigationPaneItem with Diagnosticable {
   NavigationPaneItem({this.key});
 }
 
+class CustomPaneItem extends NavigationPaneItem {
+  CustomPaneItem({required this.child});
+
+  final Widget child;
+
+  Widget build(BuildContext context) {
+    assert(debugCheckHasFluentTheme(context));
+    final theme = NavigationPaneTheme.of(context);
+    return Padding(
+      key: itemKey,
+      padding: theme.iconPadding ?? EdgeInsets.zero,
+      child: child,
+    );
+  }
+}
+
 /// The item used by [NavigationView] to display the tiles.
 ///
 /// On [PaneDisplayMode.compact], only [icon] is displayed, and [title] is
