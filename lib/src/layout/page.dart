@@ -36,11 +36,12 @@ class ScaffoldPage extends StatefulWidget {
   }) : content = Builder(builder: (context) {
           return ListView(
             controller: scrollController,
-            padding: EdgeInsetsDirectional.only(
-              bottom: kPageDefaultVerticalPadding,
-              start: PageHeader.horizontalPadding(context),
-              end: PageHeader.horizontalPadding(context),
-            ),
+            padding: padding ??
+                EdgeInsetsDirectional.only(
+                  bottom: kPageDefaultVerticalPadding,
+                  start: PageHeader.horizontalPadding(context),
+                  end: PageHeader.horizontalPadding(context),
+                ),
             children: children,
           );
         });
@@ -55,11 +56,12 @@ class ScaffoldPage extends StatefulWidget {
     this.resizeToAvoidBottomInset = true,
   }) : content = Builder(builder: (context) {
           return Padding(
-            padding: EdgeInsetsDirectional.only(
-              bottom: kPageDefaultVerticalPadding,
-              start: PageHeader.horizontalPadding(context),
-              end: PageHeader.horizontalPadding(context),
-            ),
+            padding: padding ??
+                EdgeInsetsDirectional.only(
+                  bottom: kPageDefaultVerticalPadding,
+                  start: PageHeader.horizontalPadding(context),
+                  end: PageHeader.horizontalPadding(context),
+                ),
             child: content,
           );
         });
@@ -127,16 +129,15 @@ class _ScaffoldPageState extends State<ScaffoldPage> {
     assert(debugCheckHasFluentTheme(context));
     assert(debugCheckHasMediaQuery(context));
 
-    final mediaQuery = MediaQuery.of(context);
     final theme = FluentTheme.of(context);
-    final view = InheritedNavigationView.maybeOf(context);
+    final view = NavigationView.maybeOf(context);
 
     return PageStorage(
       bucket: _bucket,
       child: Padding(
         padding: EdgeInsetsDirectional.only(
           bottom: widget.resizeToAvoidBottomInset
-              ? mediaQuery.viewInsets.bottom
+              ? MediaQuery.viewInsetsOf(context).bottom
               : 0.0,
         ),
         child: Column(children: [
@@ -146,9 +147,11 @@ class _ScaffoldPageState extends State<ScaffoldPage> {
               // not a parent widget of this page. this happens because, if a navigation
               // view is not used, the page would be uncolored.
               color: view == null ? theme.scaffoldBackgroundColor : null,
-              padding: EdgeInsetsDirectional.only(
-                top: widget.padding?.top ?? kPageDefaultVerticalPadding,
-              ),
+              padding: widget.padding == null
+                  ? const EdgeInsetsDirectional.only(
+                      top: kPageDefaultVerticalPadding,
+                    )
+                  : EdgeInsetsDirectional.only(top: widget.padding!.top),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -165,7 +168,7 @@ class _ScaffoldPageState extends State<ScaffoldPage> {
   }
 }
 
-/// The header of a page
+/// The header of a page.
 ///
 /// See also:
 ///
@@ -200,12 +203,19 @@ class PageHeader extends StatelessWidget {
   final Widget? commandBar;
 
   /// The horizontal padding applied to both sides of the page
+  ///
+  /// If not provided, the padding is calculated using the [horizontalPadding]
+  /// function, which gets the padding based on the screen width.
   final double? padding;
 
-  /// Gets the horizontal padding applied to the header based on the screen width
+  /// Gets the horizontal padding applied to the header based on the screen
+  /// width.
+  ///
+  /// If the screen is small, the padding is 12.0, otherwise it defaults to
+  /// [kPageDefaultVerticalPadding]
   static double horizontalPadding(BuildContext context) {
     assert(debugCheckHasMediaQuery(context));
-    final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.sizeOf(context).width;
     final isSmallScreen = screenWidth < 640.0;
     final horizontalPadding =
         isSmallScreen ? 12.0 : kPageDefaultVerticalPadding;
@@ -215,7 +225,6 @@ class PageHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     assert(debugCheckHasFluentTheme(context));
-
     final theme = FluentTheme.of(context);
     final horizontalPadding = padding ?? PageHeader.horizontalPadding(context);
 

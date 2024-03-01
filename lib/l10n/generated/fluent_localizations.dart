@@ -22,6 +22,7 @@ import 'fluent_localizations_id.dart';
 import 'fluent_localizations_it.dart';
 import 'fluent_localizations_ja.dart';
 import 'fluent_localizations_ko.dart';
+import 'fluent_localizations_ku.dart';
 import 'fluent_localizations_ms.dart';
 import 'fluent_localizations_my.dart';
 import 'fluent_localizations_nl.dart';
@@ -37,6 +38,7 @@ import 'fluent_localizations_tr.dart';
 import 'fluent_localizations_uk.dart';
 import 'fluent_localizations_ur.dart';
 import 'fluent_localizations_uz.dart';
+import 'fluent_localizations_vi.dart';
 import 'fluent_localizations_zh.dart';
 
 /// Callers can lookup localized strings with an instance of FluentLocalizations
@@ -140,6 +142,7 @@ abstract class FluentLocalizations {
     Locale('it'),
     Locale('ja'),
     Locale('ko'),
+    Locale('ku'),
     Locale('ms'),
     Locale('my'),
     Locale('nl'),
@@ -155,6 +158,7 @@ abstract class FluentLocalizations {
     Locale('uk'),
     Locale('ur'),
     Locale('uz'),
+    Locale('vi'),
     Locale('zh'),
     Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant')
   ];
@@ -375,6 +379,7 @@ class _FluentLocalizationsDelegate
         'it',
         'ja',
         'ko',
+        'ku',
         'ms',
         'my',
         'nl',
@@ -390,6 +395,7 @@ class _FluentLocalizationsDelegate
         'uk',
         'ur',
         'uz',
+        'vi',
         'zh'
       ].contains(locale.languageCode);
 
@@ -446,6 +452,8 @@ FluentLocalizations lookupFluentLocalizations(Locale locale) {
       return FluentLocalizationsJa();
     case 'ko':
       return FluentLocalizationsKo();
+    case 'ku':
+      return FluentLocalizationsKu();
     case 'ms':
       return FluentLocalizationsMs();
     case 'my':
@@ -476,6 +484,8 @@ FluentLocalizations lookupFluentLocalizations(Locale locale) {
       return FluentLocalizationsUr();
     case 'uz':
       return FluentLocalizationsUz();
+    case 'vi':
+      return FluentLocalizationsVi();
     case 'zh':
       return FluentLocalizationsZh();
   }

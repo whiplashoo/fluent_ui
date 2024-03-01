@@ -33,6 +33,7 @@ class _ComboBoxMenuPainter extends CustomPainter {
     required this.getSelectedItemOffset,
     Color borderColor = Colors.black,
     Color? backgroundColor,
+    int elevation = 0,
   })  : _painter = BoxDecoration(
           // If you add an image here, you must provide a real
           // configuration in the paint() function and you must provide some sort
@@ -40,6 +41,7 @@ class _ComboBoxMenuPainter extends CustomPainter {
           // color: color,
           borderRadius: const BorderRadius.all(kComboBoxRadius),
           border: Border.all(color: borderColor),
+          boxShadow: kElevationToShadow[elevation],
           color: backgroundColor,
         ).createBoxPainter(),
         super(repaint: resize);
@@ -137,9 +139,9 @@ class _ComboBoxItemButtonState<T> extends State<_ComboBoxItemButton<T>> {
     }
   }
 
-  void _handleOnTap() {
-    final comboboxMenuItem = widget.route.items[widget.itemIndex];
+  ComboBoxItem<T> get comboboxMenuItem => widget.route.items[widget.itemIndex];
 
+  void _handleOnTap() {
     if (comboboxMenuItem.onTap != null) {
       comboboxMenuItem.onTap!();
     }
@@ -198,7 +200,7 @@ class _ComboBoxItemButtonState<T> extends State<_ComboBoxItemButton<T>> {
           ]),
         );
       },
-      onPressed: _handleOnTap,
+      onPressed: comboboxMenuItem.enabled ? _handleOnTap : null,
       onFocusChange: _handleFocusChange,
     );
     if (kIsWeb) {
@@ -206,6 +208,30 @@ class _ComboBoxItemButtonState<T> extends State<_ComboBoxItemButton<T>> {
       // element, which is what a combo box emulates.
       child = Shortcuts(
         shortcuts: _webShortcuts,
+        child: child,
+      );
+    }
+
+    if (kIsWeb) {
+      child = Focus(
+        onKeyEvent: (node, event) {
+          if (!(event is KeyDownEvent || event is KeyRepeatEvent)) {
+            return KeyEventResult.ignored;
+          }
+
+          if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+            // if nothing is selected, select the first
+            FocusScope.of(context).nextFocus();
+            return KeyEventResult.handled;
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+            // if nothing is selected, select the last
+            FocusScope.of(context).previousFocus();
+            return KeyEventResult.handled;
+          } else {
+            return KeyEventResult.ignored;
+          }
+        },
+        canRequestFocus: false,
         child: child,
       );
     }
@@ -259,17 +285,12 @@ class _ComboBoxMenuState<T> extends State<_ComboBoxMenu<T>> {
       curve: const Interval(0.25, 0.5),
       reverseCurve: const Threshold(0.0),
     );
-
-    _resize.addListener(() {
-      if (mounted) setState(() {});
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     assert(debugCheckHasFluentTheme(context));
     assert(debugCheckHasFluentLocalizations(context));
-
     // The menu is shown in three stages (unit timing in brackets):
     // [0s - 0.25s] - Fade in a rect-sized menu container with the selected item.
     // [0.25s - 0.5s] - Grow the otherwise empty menu container from the center
@@ -282,63 +303,70 @@ class _ComboBoxMenuState<T> extends State<_ComboBoxMenu<T>> {
 
     final theme = FluentTheme.of(context);
 
-    return FadeTransition(
-      opacity: _fadeOpacity,
-      child: CustomPaint(
-        painter: _ComboBoxMenuPainter(
-          selectedIndex: route.selectedIndex,
-          resize: _resize,
-          // This offset is passed as a callback, not a value, because it must
-          // be retrieved at paint time (after layout), not at build time.
-          getSelectedItemOffset: () => route.getItemOffset(route.selectedIndex),
-          // elevation: route.elevation.toDouble(),
-          borderColor: theme.resources.surfaceStrokeColorFlyout,
-          backgroundColor: widget.popupColor,
-        ),
-        child: ClipRRect(
-          clipper: _ComboBoxResizeClipper(
-            resizeAnimation: _resize,
-            getSelectedItemOffset: () =>
-                route.getItemOffset(route.selectedIndex),
-          ),
-          child: Acrylic(
-            tintAlpha: 1.0,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(kComboBoxRadius),
+    return AnimatedBuilder(
+      animation: widget.route.animation!,
+      builder: (context, child) {
+        return FadeTransition(
+          opacity: _fadeOpacity,
+          child: CustomPaint(
+            painter: _ComboBoxMenuPainter(
+              selectedIndex: route.selectedIndex,
+              resize: _resize,
+              // This offset is passed as a callback, not a value, because it must
+              // be retrieved at paint time (after layout), not at build time.
+              getSelectedItemOffset: () =>
+                  route.getItemOffset(route.selectedIndex ?? 0),
+              // elevation: route.elevation.toDouble(),
+              borderColor: theme.resources.surfaceStrokeColorFlyout,
+              backgroundColor: widget.popupColor,
+              elevation: route.elevation,
             ),
-            elevation: route.elevation.toDouble(),
-            child: ColoredBox(
-              color: theme.menuColor.withOpacity(kMenuColorOpacity),
-              child: Semantics(
-                scopesRoute: true,
-                namesRoute: true,
-                explicitChildNodes: true,
-                label: FluentLocalizations.of(context).dialogLabel,
-                child: DefaultTextStyle.merge(
-                  style: route.style,
-                  child: ScrollConfiguration(
-                    behavior: const _ComboBoxScrollBehavior(),
-                    child: PrimaryScrollController(
-                      controller: widget.route.scrollController!,
-                      child: ListView.builder(
-                        primary: true,
-                        itemCount: route.items.length,
-                        padding: _kListPadding,
-                        shrinkWrap: true,
-                        itemBuilder: (context, index) {
-                          Widget container = _ComboBoxItemContainer(
-                            child: _ComboBoxItemButton<T>(
-                              route: widget.route,
-                              padding: widget.padding,
-                              buttonRect: widget.buttonRect,
-                              constraints: widget.constraints,
-                              itemIndex: index,
-                            ),
-                          );
-                          return container;
-                        },
-                      ),
-                    ),
+            child: ClipRRect(
+              clipper: _ComboBoxResizeClipper(
+                resizeAnimation: _resize,
+                getSelectedItemOffset: () =>
+                    route.getItemOffset(route.selectedIndex ?? 0),
+              ),
+              child: child,
+            ),
+          ),
+        );
+      },
+      child: Acrylic(
+        tintAlpha: 1.0,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(kComboBoxRadius),
+        ),
+        child: ColoredBox(
+          color: theme.menuColor.withOpacity(kMenuColorOpacity),
+          child: Semantics(
+            scopesRoute: true,
+            namesRoute: true,
+            explicitChildNodes: true,
+            label: FluentLocalizations.of(context).dialogLabel,
+            child: DefaultTextStyle.merge(
+              style: route.style,
+              child: ScrollConfiguration(
+                behavior: const _ComboBoxScrollBehavior(),
+                child: PrimaryScrollController(
+                  controller: widget.route.scrollController!,
+                  child: ListView.builder(
+                    primary: true,
+                    itemCount: route.items.length,
+                    padding: _kListPadding,
+                    shrinkWrap: true,
+                    itemBuilder: (context, index) {
+                      Widget container = _ComboBoxItemContainer(
+                        child: _ComboBoxItemButton<T>(
+                          route: widget.route,
+                          padding: widget.padding,
+                          buttonRect: widget.buttonRect,
+                          constraints: widget.constraints,
+                          itemIndex: index,
+                        ),
+                      );
+                      return container;
+                    },
                   ),
                 ),
               ),
@@ -377,9 +405,9 @@ class _ComboBoxResizeClipper extends CustomClipper<RRect> {
 
     return RRect.fromRectAndRadius(
       Rect.fromLTWH(
-        0,
+        -10,
         top.evaluate(resizeAnimation),
-        size.width,
+        size.width + 10,
         bottom.evaluate(resizeAnimation),
       ),
       kComboBoxRadius,
@@ -421,8 +449,11 @@ class _ComboBoxMenuRouteLayout<T> extends SingleChildLayoutDelegate {
 
   @override
   Offset getPositionForChild(Size size, Size childSize) {
-    final menuLimits =
-        route.getMenuLimits(buttonRect, size.height, route.selectedIndex);
+    final menuLimits = route.getMenuLimits(
+      buttonRect,
+      size.height,
+      route.selectedIndex ?? 0,
+    );
 
     assert(() {
       final container = Offset.zero & size;
@@ -499,7 +530,7 @@ class _ComboBoxRoute<T> extends PopupRoute<_ComboBoxRouteResult<T>> {
   final List<ComboBoxItem<T>> items;
   final EdgeInsetsGeometry padding;
   final Rect buttonRect;
-  final int selectedIndex;
+  final int? selectedIndex;
   final int elevation;
   final CapturedThemes capturedThemes;
   final TextStyle style;
@@ -580,7 +611,7 @@ class _ComboBoxRoute<T> extends PopupRoute<_ComboBoxRouteResult<T>> {
         math.max(availableHeight - kComboBoxItemHeight, buttonBottom);
 
     var menuTop = (buttonTop - selectedItemOffset) -
-        (itemHeights[selectedIndex] - buttonRect.height) / 2.0;
+        (itemHeights[selectedIndex ?? 0] - buttonRect.height) / 2.0;
 
     var preferredMenuHeight = _kListPadding.vertical;
     if (items.isNotEmpty) {
@@ -607,11 +638,11 @@ class _ComboBoxRoute<T> extends PopupRoute<_ComboBoxRouteResult<T>> {
       menuTop = menuBottom - menuHeight;
     }
 
-    if (menuBottom - itemHeights[selectedIndex] / 2.0 <
+    if (menuBottom - itemHeights[selectedIndex ?? 0] / 2.0 <
         buttonBottom - buttonRect.height / 2.0) {
       menuBottom = buttonBottom -
           buttonRect.height / 2.0 +
-          itemHeights[selectedIndex] / 2.0;
+          itemHeights[selectedIndex ?? 0] / 2.0;
       menuTop = menuBottom - menuHeight;
     }
 
@@ -654,7 +685,7 @@ class _ComboBoxRoutePage<T> extends StatelessWidget {
   final BoxConstraints constraints;
   final EdgeInsetsGeometry padding;
   final Rect buttonRect;
-  final int selectedIndex;
+  final int? selectedIndex;
   final int elevation;
   final CapturedThemes capturedThemes;
   final TextStyle? style;
@@ -671,8 +702,11 @@ class _ComboBoxRoutePage<T> extends StatelessWidget {
     // Otherwise the initialScrollOffset is just a rough approximation based on
     // treating the items as if their heights were all equal to kComboBoxItemHeight.
     if (route.scrollController == null) {
-      final menuLimits =
-          route.getMenuLimits(buttonRect, constraints.maxHeight, selectedIndex);
+      final menuLimits = route.getMenuLimits(
+        buttonRect,
+        constraints.maxHeight,
+        selectedIndex ?? 0,
+      );
       route.scrollController = ScrollController(
         initialScrollOffset: menuLimits.scrollOffset,
         keepScrollOffset: false,
@@ -725,13 +759,30 @@ class _ComboBoxItemContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = FluentTheme.of(context);
     final hasPadding = _ContainerWithoutPadding.of(context) == null;
+    final state = HoverButton.maybeOf(context)?.states ?? <ButtonStates>{};
+
+    final foregroundColor = state.isDisabled
+        ? theme.resources.textFillColorDisabled
+        : state.isPressing
+            ? theme.resources.textFillColorTertiary
+            : state.isHovering
+                ? theme.resources.textFillColorSecondary
+                : theme.resources.textFillColorPrimary;
+
     return Container(
       height: hasPadding
           ? kComboBoxItemHeight
           : kComboBoxItemHeight - _kMenuItemBottomPadding,
       alignment: AlignmentDirectional.centerStart,
-      child: child,
+      child: DefaultTextStyle.merge(
+        style: TextStyle(color: foregroundColor),
+        child: IconTheme.merge(
+          data: IconThemeData(color: foregroundColor),
+          child: child,
+        ),
+      ),
     );
   }
 }
@@ -762,6 +813,7 @@ class ComboBoxItem<T> extends _ComboBoxItemContainer {
     super.key,
     this.onTap,
     this.value,
+    this.enabled = true,
     required super.child,
   });
 
@@ -772,6 +824,9 @@ class ComboBoxItem<T> extends _ComboBoxItemContainer {
   ///
   /// Eventually returned in a call to [ComboBox.onChanged].
   final T? value;
+
+  /// Whether this item is enabled.
+  final bool enabled;
 }
 
 /// A fluent design button for selecting from a list of items.
@@ -1121,9 +1176,11 @@ class ComboBoxState<T> extends State<ComboBox<T>> {
       for (var itemIndex = 0; itemIndex < widget.items!.length; itemIndex++) {
         if (widget.items![itemIndex].value == widget.value) {
           _selectedIndex = itemIndex;
-          return;
+          break;
         }
       }
+    } else {
+      _selectedIndex = null;
     }
   }
 
@@ -1146,7 +1203,7 @@ class ComboBoxState<T> extends State<ComboBox<T>> {
       items: widget.items!,
       buttonRect: menuMargin.resolve(textDirection).inflateRect(itemRect),
       padding: _kMenuItemPadding.resolve(textDirection),
-      selectedIndex: _selectedIndex ?? 0,
+      selectedIndex: _selectedIndex,
       elevation: widget.elevation,
       capturedThemes:
           InheritedTheme.capture(from: context, to: navigator.context),
@@ -1198,6 +1255,7 @@ class ComboBoxState<T> extends State<ComboBox<T>> {
   Widget build(BuildContext context) {
     assert(debugCheckHasFluentTheme(context));
     assert(debugCheckHasFluentLocalizations(context));
+    assert(debugCheckHasDirectionality(context));
 
     final theme = FluentTheme.of(context);
 
@@ -1226,7 +1284,6 @@ class ComboBoxState<T> extends State<ComboBox<T>> {
           color: theme.resources.textFillColorDisabled,
         ),
         child: IgnorePointer(
-          ignoringSemantics: false,
           child: displayedHint,
         ),
       ));

@@ -24,7 +24,7 @@ void main() {
     double? textScaleFactor;
     await tester.pumpWidget(FluentApp(
       home: Builder(builder: (BuildContext context) {
-        textScaleFactor = MediaQuery.of(context).textScaleFactor;
+        textScaleFactor = MediaQuery.textScalerOf(context).scale(1.0);
         return Container();
       }),
     ));

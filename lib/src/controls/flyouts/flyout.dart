@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 
 /// Defines constants that specify the preferred location for positioning a
@@ -136,7 +137,7 @@ enum FlyoutPlacementMode {
       case FlyoutPlacementMode.right:
         return BoxConstraints(
           maxWidth: (rootSize.width - targetOffset.dx)._ensurePositive(),
-          maxHeight: (rootSize.height)._ensurePositive(),
+          maxHeight: rootSize.height._ensurePositive(),
         );
       case FlyoutPlacementMode.auto:
       default:
@@ -489,20 +490,20 @@ class FlyoutController with ChangeNotifier {
   /// {@template fluent_ui.flyouts.barrierDismissible}
   /// If [barrierDismissible] is true, tapping outside of the flyout will close
   /// it.
-  /// {@end-template}
+  /// {@endtemplate}
   ///
   /// [barrierColor] is the color of the barrier.
   ///
   /// {@template fluent_ui.flyouts.dismissWithEsc}
   /// When [dismissWithEsc] is true, the flyout can be dismissed by pressing the
   /// ESC key.
-  /// {@end-template}
+  /// {@endtemplate}
   ///
   /// {@template fluent_ui.flyouts.dismissOnPointerMoveAway}
   /// If [dismissOnPointerMoveAway] is enabled, the flyout is dismissed when the
   /// cursor moves away from either the target or the flyout. It's disabled by
   /// default.
-  /// {@end-template}
+  /// {@endtemplate}
   ///
   /// [placementMode] describes where the flyout will be placed. Defaults to auto
   ///
@@ -534,6 +535,11 @@ class FlyoutController with ChangeNotifier {
   ///
   /// [position] lets you position the flyout anywhere on the screen, making it
   /// possible to create context menus. If provided, [placementMode] is ignored.
+  ///
+  /// [barrierRecognizer] is a gesture recognizer that will be added to the
+  /// barrier. It's useful when the flyout is used as a context menu and the
+  /// barrier should be dismissed when the user clicks outside of the flyout.
+  /// If this is provided, [barrierDismissible] is ignored.
   Future<T?> showFlyout<T>({
     required WidgetBuilder builder,
     bool barrierDismissible = true,
@@ -550,6 +556,8 @@ class FlyoutController with ChangeNotifier {
     FlyoutTransitionBuilder? transitionBuilder,
     Duration? transitionDuration,
     Offset? position,
+    RouteSettings? settings,
+    GestureRecognizer? barrierRecognizer,
   }) async {
     _ensureAttached();
     assert(_attachState!.mounted);
@@ -595,6 +603,9 @@ class FlyoutController with ChangeNotifier {
     final result = await navigator.push<T>(PageRouteBuilder<T>(
       opaque: false,
       transitionDuration: transitionDuration,
+      reverseTransitionDuration: transitionDuration,
+      settings: settings,
+      fullscreenDialog: true,
       pageBuilder: (context, animation, secondary) {
         transitionBuilder ??= (context, animation, placementMode, flyout) {
           switch (placementMode) {
@@ -627,15 +638,27 @@ class FlyoutController with ChangeNotifier {
           builder: (context, rootSize, menus, keys) {
             assert(menus.length == keys.length);
 
+            final barrier = ColoredBox(
+              color: barrierColor ?? Colors.black.withOpacity(0.3),
+            );
+
             Widget box = Stack(children: [
-              if (barrierDismissible)
+              if (barrierRecognizer != null)
+                Positioned.fill(
+                  child: Listener(
+                    behavior: HitTestBehavior.opaque,
+                    onPointerDown: (event) {
+                      barrierRecognizer.addPointer(event);
+                    },
+                    child: barrier,
+                  ),
+                )
+              else if (barrierDismissible)
                 Positioned.fill(
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: barrierDismissible ? navigator.pop : null,
-                    child: ColoredBox(
-                      color: barrierColor ?? Colors.black.withOpacity(0.3),
-                    ),
+                    child: barrier,
                   ),
                 ),
               Positioned.fill(

@@ -2,10 +2,7 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/foundation.dart';
 
 const double _kVerticalOffset = 6.0;
-const Widget _kDefaultDropdownButtonTrailing = Icon(
-  FluentIcons.chevron_down,
-  size: 8.0,
-);
+const Widget _kDefaultDropdownButtonTrailing = ChevronDown();
 
 typedef DropDownButtonBuilder = Widget Function(
   BuildContext context,
@@ -325,6 +322,7 @@ class DropDownButtonState extends State<DropDownButton> {
 
     widget.onOpen?.call();
     await _flyoutController.showFlyout(
+      barrierColor: Colors.transparent,
       placementMode: FlyoutPlacementMode.auto,
       autoModeConfiguration: FlyoutAutoConfiguration(
         preferredMode: widget.placement,
@@ -338,25 +336,53 @@ class DropDownButtonState extends State<DropDownButton> {
         return MenuFlyout(
           color: widget.menuColor,
           shape: widget.menuShape,
-          items: widget.items.map((item) {
-            if (widget.closeAfterClick && item is MenuFlyoutItem) {
-              return MenuFlyoutItem(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  item.onPressed?.call();
-                },
-                key: item.key,
-                leading: item.leading,
-                text: item.text,
-                trailing: item.trailing,
-                selected: item.selected,
-              );
-            }
-            return item;
-          }).toList(),
+          items:
+              widget.items.map((item) => transformItem(item, context)).toList(),
         );
       },
     );
     widget.onClose?.call();
+  }
+
+  MenuFlyoutItemBase transformItem(
+    MenuFlyoutItemBase item,
+    BuildContext context,
+  ) {
+    if (item is MenuFlyoutSubItem) {
+      return _createSubMenuItem(item);
+    } else if (widget.closeAfterClick && item is MenuFlyoutItem) {
+      return _createMenuItem(item, context);
+    } else {
+      return item;
+    }
+  }
+
+  MenuFlyoutSubItem _createSubMenuItem(MenuFlyoutSubItem item) {
+    return MenuFlyoutSubItem(
+      key: item.key,
+      text: item.text,
+      items: (context) => item.items
+          .call(context)
+          .map((item) => transformItem(item, context))
+          .toList(),
+      leading: item.leading,
+      trailing: item.trailing,
+      showBehavior: item.showBehavior,
+      showHoverDelay: item.showHoverDelay,
+    );
+  }
+
+  MenuFlyoutItem _createMenuItem(MenuFlyoutItem item, BuildContext context) {
+    return MenuFlyoutItem(
+      onPressed: () {
+        Navigator.of(context).pop();
+        item.onPressed?.call();
+      },
+      key: item.key,
+      leading: item.leading,
+      text: item.text,
+      trailing: item.trailing,
+      selected: item.selected,
+    );
   }
 }

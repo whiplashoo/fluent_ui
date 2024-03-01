@@ -72,9 +72,6 @@ class TabView extends StatefulWidget {
     this.header,
     this.footer,
     this.closeDelayDuration = const Duration(milliseconds: 400),
-    @Deprecated(
-        'This property is no longer used and will be removed in the next major release.')
-    this.wheelScroll = false,
   });
 
   /// The index of the tab to be displayed
@@ -83,8 +80,7 @@ class TabView extends StatefulWidget {
   /// Whether another tab was requested to be displayed
   final ValueChanged<int>? onChanged;
 
-  /// The tabs to be displayed. This must have the same
-  /// length of [bodies]
+  /// The tabs to be displayed.
   final List<Tab> tabs;
 
   /// Called when the new button is pressed or when the
@@ -98,10 +94,10 @@ class TabView extends StatefulWidget {
 
   /// Whether the following shortcuts are enabled:
   ///
-  /// - Ctrl + T to create a new tab
-  /// - Ctrl + F4 or Ctrl + W to close the current tab
-  /// - `Ctrl+1` to `Ctrl+8` to navigate through tabs
-  /// - `Ctrl+9` to navigate to the last tab
+  ///   * `Ctrl + T` to create a new tab
+  ///   * `Ctrl + F4` or `Ctrl + W` to close the current tab
+  ///   * `Ctrl + 1` to ` Ctrl + 8` to navigate through tabs
+  ///   * `Ctrl + 9` to navigate to the last tab
   final bool shortcutsEnabled;
 
   /// Called when the tabs are reordered. If null,
@@ -127,10 +123,6 @@ class TabView extends StatefulWidget {
   ///
   /// If null, a [ScrollPosController] is created internally.
   final ScrollPosController? scrollController;
-
-  @Deprecated('This property is no longer used and will be removed in the'
-      ' next major release.')
-  final bool wheelScroll;
 
   /// Indicates the close button visibility mode
   final CloseButtonVisibilityMode closeButtonVisibility;
@@ -205,7 +197,13 @@ class TabView extends StatefulWidget {
         'tabWidthBehavior',
         tabWidthBehavior,
         defaultValue: TabWidthBehavior.equal,
-      ));
+      ))
+      ..add(DiagnosticsProperty<Duration>(
+        'closeDelayDuration',
+        closeDelayDuration,
+      ))
+      ..add(DoubleProperty('minTabWidth', minTabWidth, defaultValue: 80.0))
+      ..add(DoubleProperty('maxTabWidth', maxTabWidth, defaultValue: 240.0));
   }
 }
 
@@ -361,10 +359,10 @@ class _TabViewState extends State<TabView> {
         onPressed: onPressed,
         style: ButtonStyle(
           foregroundColor: ButtonState.resolveWith((states) {
-            if (states.isDisabled || states.isNone) {
+            if (states.isDisabled) {
               return FluentTheme.of(context)
                   .resources
-                  .controlAltFillColorDisabled;
+                  .accentTextFillColorDisabled;
             } else {
               return FluentTheme.of(context).inactiveColor;
             }
@@ -505,7 +503,7 @@ class _TabViewState extends State<TabView> {
                     child: _buttonTabBuilder(
                       context,
                       const Icon(FluentIcons.caret_left_solid8, size: 8),
-                      !scrollController.canBackward
+                      scrollController.canBackward
                           ? () {
                               if (direction == TextDirection.ltr) {
                                 scrollController.backward(align: false);
@@ -529,7 +527,7 @@ class _TabViewState extends State<TabView> {
                     child: _buttonTabBuilder(
                       context,
                       const Icon(FluentIcons.caret_right_solid8, size: 8),
-                      !scrollController.canForward
+                      scrollController.canForward
                           ? () {
                               if (direction == TextDirection.ltr) {
                                 scrollController.forward(align: false);
@@ -685,8 +683,6 @@ class __TabBodyState extends State<_TabBody> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    MediaQuery.of(context);
-
     _pageController ??= PageController(initialPage: widget.index);
   }
 
@@ -725,7 +721,7 @@ class __TabBodyState extends State<_TabBody> {
 }
 
 /// Represents a single tab within a [TabView].
-class Tab {
+class Tab with Diagnosticable {
   final _tabKey = GlobalKey<__TabState>(debugLabel: 'Tab key');
 
   /// Creates a tab.
@@ -737,6 +733,7 @@ class Tab {
     this.closeIcon = FluentIcons.chrome_close,
     this.onClosed,
     this.semanticLabel,
+    this.disabled = false,
   });
 
   final Key? key;
@@ -765,6 +762,22 @@ class Tab {
 
   /// The body of the view attached to this tab
   final Widget body;
+
+  /// Whether the tab is disabled or not. If true, the tab will be greyed out
+  final bool disabled;
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(FlagProperty(
+        'disabled',
+        value: disabled,
+        defaultValue: false,
+        ifFalse: 'enabled',
+      ))
+      ..add(IconDataProperty('closeIcon', closeIcon));
+  }
 }
 
 class _Tab extends StatefulWidget {
@@ -842,39 +855,35 @@ class __TabState extends State<_Tab>
     return HoverButton(
       key: widget.tab.key,
       semanticLabel: widget.tab.semanticLabel ?? text,
-      onPressed: widget.onPressed,
+      onPressed: widget.tab.disabled ? null : widget.onPressed,
       builder: (context, states) {
-        /// https://github.com/microsoft/microsoft-ui-xaml/blob/main/dev/TreeView/TreeView_themeresources.xaml#L19-L26
+        // https://github.com/microsoft/microsoft-ui-xaml/blob/main/dev/TabView/TabView_themeresources.xaml#L15-L19
         final foregroundColor = ButtonState.resolveWith<Color>((states) {
-          if (states.isPressing) {
+          if (widget.selected) {
+            return res.textFillColorPrimary;
+          } else if (states.isPressing) {
             return res.textFillColorSecondary;
           } else if (states.isHovering) {
             return res.textFillColorPrimary;
           } else if (states.isDisabled) {
             return res.textFillColorDisabled;
           } else {
-            return widget.selected
-                ? res.textFillColorPrimary
-                : res.textFillColorSecondary;
+            return res.textFillColorSecondary;
           }
         }).resolve(states);
 
-        /// https://github.com/microsoft/microsoft-ui-xaml/blob/main/dev/TreeView/TreeView_themeresources.xaml#L10-L17
+        /// https://github.com/microsoft/microsoft-ui-xaml/blob/main/dev/TabView/TabView_themeresources.xaml#L10-L14
         final backgroundColor = ButtonState.resolveWith<Color>((states) {
-          if (states.isPressing) {
-            return widget.selected
-                ? res.subtleFillColorSecondary
-                : res.subtleFillColorTertiary;
+          if (widget.selected) {
+            return res.solidBackgroundFillColorTertiary;
+          } else if (states.isPressing) {
+            return res.layerOnMicaBaseAltFillColorDefault;
           } else if (states.isHovering) {
-            return widget.selected
-                ? res.subtleFillColorTertiary
-                : res.subtleFillColorSecondary;
+            return res.layerOnMicaBaseAltFillColorSecondary;
           } else if (states.isDisabled) {
-            return res.subtleFillColorDisabled;
+            return res.layerOnMicaBaseAltFillColorTransparent;
           } else {
-            return widget.selected
-                ? res.subtleFillColorSecondary
-                : res.subtleFillColorTransparent;
+            return res.layerOnMicaBaseAltFillColorTransparent;
           }
         }).resolve(states);
 
@@ -893,12 +902,19 @@ class __TabState extends State<_Tab>
                         maxWidth: _kMaxTileWidth,
                         minHeight: 28.0,
                       ),
-            padding: const EdgeInsetsDirectional.only(
-              start: 8,
-              top: 3,
-              end: 4,
-              bottom: 3,
-            ),
+            padding: widget.selected
+                ? const EdgeInsetsDirectional.only(
+                    start: 9,
+                    top: 3,
+                    end: 5,
+                    bottom: 4,
+                  )
+                : const EdgeInsetsDirectional.only(
+                    start: 8,
+                    top: 3,
+                    end: 4,
+                    bottom: 3,
+                  ),
             decoration: BoxDecoration(
               borderRadius: borderRadius,
 
@@ -977,6 +993,7 @@ class __TabState extends State<_Tab>
               if (widget.reorderIndex != null) {
                 return ReorderableDragStartListener(
                   index: widget.reorderIndex!,
+                  enabled: !widget.tab.disabled,
                   child: result,
                 );
               }

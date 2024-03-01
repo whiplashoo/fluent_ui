@@ -5,6 +5,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/foundation.dart';
 
 // The minimum padding from all edges of the selection toolbar to all edges of
 // the screen.
@@ -67,8 +68,9 @@ class FluentTextSelectionToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    assert(debugCheckHasMediaQuery(context));
     final paddingAbove =
-        MediaQuery.of(context).padding.top + _kToolbarScreenPadding;
+        MediaQuery.paddingOf(context).top + _kToolbarScreenPadding;
     final localAdjustment = Offset(_kToolbarScreenPadding, paddingAbove);
 
     return Padding(
@@ -117,18 +119,15 @@ class _FluentTextSelectionControls extends TextSelectionControls {
     Offset selectionMidpoint,
     List<TextSelectionPoint> endpoints,
     TextSelectionDelegate delegate,
-    ClipboardStatusNotifier? clipboardStatus,
+    ValueListenable<ClipboardStatus>? clipboardStatus,
     Offset? lastSecondaryTapDownPosition,
   ) {
     return _FluentTextSelectionControlsToolbar(
       clipboardStatus: clipboardStatus,
       endpoints: endpoints,
       globalEditableRegion: globalEditableRegion,
-      handleCut:
-          canCut(delegate) ? () => handleCut(delegate, clipboardStatus) : null,
-      handleCopy: canCopy(delegate)
-          ? () => handleCopy(delegate, clipboardStatus)
-          : null,
+      handleCut: canCut(delegate) ? () => handleCut(delegate) : null,
+      handleCopy: canCopy(delegate) ? () => handleCopy(delegate) : null,
       handlePaste: canPaste(delegate) ? () => handlePaste(delegate) : null,
       handleSelectAll:
           canSelectAll(delegate) ? () => handleSelectAll(delegate) : null,
@@ -193,7 +192,7 @@ class _FluentTextSelectionControlsToolbar extends StatefulWidget {
     required this.lastSecondaryTapDownPosition,
   });
 
-  final ClipboardStatusNotifier? clipboardStatus;
+  final ValueListenable<ClipboardStatus>? clipboardStatus;
   final List<TextSelectionPoint> endpoints;
   final Rect globalEditableRegion;
   final VoidCallback? handleCopy;
@@ -211,7 +210,7 @@ class _FluentTextSelectionControlsToolbar extends StatefulWidget {
 
 class _FluentTextSelectionControlsToolbarState
     extends State<_FluentTextSelectionControlsToolbar> {
-  ClipboardStatusNotifier? _clipboardStatus;
+  ValueListenable<ClipboardStatus>? _clipboardStatus;
 
   void _onChangedClipboardStatus() {
     setState(() {
@@ -225,7 +224,6 @@ class _FluentTextSelectionControlsToolbarState
     if (widget.handlePaste != null) {
       _clipboardStatus = widget.clipboardStatus;
       _clipboardStatus!.addListener(_onChangedClipboardStatus);
-      _clipboardStatus!.update();
     }
   }
 
@@ -235,13 +233,9 @@ class _FluentTextSelectionControlsToolbarState
     if (oldWidget.clipboardStatus != widget.clipboardStatus) {
       if (_clipboardStatus != null) {
         _clipboardStatus!.removeListener(_onChangedClipboardStatus);
-        _clipboardStatus!.dispose();
       }
       _clipboardStatus = widget.clipboardStatus;
       _clipboardStatus!.addListener(_onChangedClipboardStatus);
-      if (widget.handlePaste != null) {
-        _clipboardStatus!.update();
-      }
     }
   }
 
@@ -250,7 +244,7 @@ class _FluentTextSelectionControlsToolbarState
     super.dispose();
     // When used in an Overlay, this can be disposed after its creator has
     // already disposed _clipboardStatus.
-    if (_clipboardStatus != null && !_clipboardStatus!.disposed) {
+    if (_clipboardStatus != null) {
       _clipboardStatus!.removeListener(_onChangedClipboardStatus);
     }
   }
@@ -266,12 +260,10 @@ class _FluentTextSelectionControlsToolbarState
     }
 
     assert(debugCheckHasMediaQuery(context));
-    final mediaQuery = MediaQuery.of(context);
-
     final midpointAnchor = Offset(
       (widget.selectionMidpoint.dx - widget.globalEditableRegion.left).clamp(
-        mediaQuery.padding.left,
-        mediaQuery.size.width - mediaQuery.padding.right,
+        MediaQuery.paddingOf(context).left,
+        MediaQuery.sizeOf(context).width - MediaQuery.paddingOf(context).right,
       ),
       widget.selectionMidpoint.dy - widget.globalEditableRegion.top,
     );
@@ -377,10 +369,10 @@ class _FluentTextSelectionToolbar extends StatelessWidget {
   Widget build(BuildContext context) {
     assert(debugCheckHasMediaQuery(context));
     assert(debugCheckHasFluentTheme(context));
-    final mediaQuery = MediaQuery.of(context);
     final theme = FluentTheme.of(context);
 
-    final paddingAbove = mediaQuery.padding.top + _kToolbarScreenPadding;
+    final paddingAbove =
+        MediaQuery.paddingOf(context).top + _kToolbarScreenPadding;
     final localAdjustment = Offset(_kToolbarScreenPadding, paddingAbove);
 
     final radius = BorderRadius.circular(6.0);
@@ -430,7 +422,7 @@ class _FluentTextSelectionToolbarButton extends StatelessWidget {
     required this.tooltip,
   });
 
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final String text;
   final IconData? icon;
   final String shortcut;

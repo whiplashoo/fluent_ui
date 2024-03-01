@@ -28,6 +28,7 @@ export 'package:flutter/material.dart'
         TextSelectionTheme,
         TextSelectionThemeData,
         SelectableText,
+        SelectionArea,
         ThemeExtension,
         TextMagnifier,
         AdaptiveTextSelectionToolbar;
@@ -59,9 +60,7 @@ export 'src/controls/inputs/buttons/icon_button.dart';
 export 'src/controls/inputs/buttons/outlined_button.dart';
 export 'src/controls/inputs/buttons/theme.dart';
 export 'src/controls/inputs/checkbox.dart';
-export 'src/controls/inputs/chip.dart';
 export 'src/controls/inputs/dropdown_button.dart';
-export 'src/controls/inputs/pill_button_bar.dart';
 export 'src/controls/inputs/radio_button.dart';
 export 'src/controls/inputs/rating.dart';
 export 'src/controls/inputs/slider.dart';
@@ -69,10 +68,10 @@ export 'src/controls/inputs/split_button.dart';
 export 'src/controls/inputs/toggle_button.dart';
 export 'src/controls/inputs/toggle_switch.dart';
 export 'src/controls/navigation/bottom_navigation.dart';
+export 'src/controls/navigation/breadcrumb_bar.dart';
 export 'src/controls/navigation/navigation_view/view.dart';
 export 'src/controls/navigation/tab_view.dart';
 export 'src/controls/navigation/tree_view.dart';
-export 'src/controls/surfaces/bottom_sheet.dart';
 export 'src/controls/surfaces/calendar/calendar_view.dart';
 export 'src/controls/surfaces/card.dart';
 export 'src/controls/surfaces/commandbar.dart';
@@ -81,8 +80,8 @@ export 'src/controls/surfaces/expander.dart';
 export 'src/controls/surfaces/info_bar.dart';
 export 'src/controls/surfaces/list_tile.dart';
 export 'src/controls/surfaces/progress_indicators.dart';
-export 'src/controls/surfaces/snackbar.dart';
 export 'src/controls/surfaces/tooltip.dart';
+export 'src/controls/utils/chevron_down.dart';
 export 'src/controls/utils/divider.dart';
 export 'src/controls/utils/hover_button.dart';
 export 'src/controls/utils/info_badge.dart';
@@ -97,6 +96,7 @@ export 'src/styles/color_resources.dart';
 export 'src/styles/focus.dart';
 export 'src/styles/mica.dart';
 export 'src/styles/motion/page_transitions.dart';
+export 'src/styles/rounded_rectangle_gradient_border.dart';
 export 'src/styles/theme.dart';
 export 'src/styles/typography.dart';
 export 'src/utils.dart';

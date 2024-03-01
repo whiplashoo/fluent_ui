@@ -71,7 +71,7 @@ class BottomNavigation extends StatelessWidget {
   /// Called when the current index should be changed. If null, the bottom
   /// navigation items are considered disabled.
   ///
-  /// {@toolSnippet}
+  /// {@tool snippet}
   /// ```dart
   ///
   /// int index = 0;

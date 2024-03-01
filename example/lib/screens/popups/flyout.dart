@@ -3,6 +3,7 @@ import 'package:example/theme.dart';
 import 'package:example/widgets/card_highlight.dart';
 import 'package:example/widgets/page.dart';
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 
 class Flyout2Screen extends StatefulWidget {
@@ -105,7 +106,36 @@ class _Flyout2ScreenState extends State<Flyout2Screen> with PageMixin {
   controller: controller,
   child: Button(
     child: const Text('Clear cart'),
-    onPressed: () {},
+    onPressed: () {
+      controller.showFlyout(
+        autoModeConfiguration: FlyoutAutoConfiguration(
+          preferredMode: $placementMode,
+        ),
+        barrierDismissible: $barrierDismissible,
+        dismissOnPointerMoveAway: $dismissOnPointerMoveAway,
+        dismissWithEsc: $dismissWithEsc,
+        navigatorKey: rootNavigatorKey.currentState,
+        builder: (context) {
+          return FlyoutContent(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'All items will be removed. Do you want to continue?',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12.0),
+                Button(
+                  onPressed: Flyout.of(context).close,
+                  child: const Text('Yes, empty my cart'),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    },
   )
 )''',
           child: Row(children: [
@@ -135,8 +165,8 @@ class _Flyout2ScreenState extends State<Flyout2Screen> with PageMixin {
                             ),
                             const SizedBox(height: 12.0),
                             Button(
-                              child: const Text('Yes, empty my cart'),
                               onPressed: Flyout.of(context).close,
+                              child: const Text('Yes, empty my cart'),
                             ),
                           ],
                         ),
@@ -162,11 +192,82 @@ class _Flyout2ScreenState extends State<Flyout2Screen> with PageMixin {
           ),
         ),
         CardHighlight(
-          codeSnippet: '''FlyoutTarget(
-  controller: controller,
+          codeSnippet: '''final menuController = FlyoutController();
+
+FlyoutTarget(
+  controller: menuController,
   child: Button(
     child: const Text('Options'),
-    onPressed: () {},
+    onPressed: () {
+      menuController.showFlyout(
+        autoModeConfiguration: FlyoutAutoConfiguration(
+          preferredMode: $placementMode,
+        ),
+        barrierDismissible: $barrierDismissible,
+        dismissOnPointerMoveAway: $dismissOnPointerMoveAway,
+        dismissWithEsc: $dismissWithEsc,
+        navigatorKey: rootNavigatorKey.currentState,
+        builder: (context) {
+          return MenuFlyout(items: [
+            MenuFlyoutItem(
+              leading: const Icon(FluentIcons.share),
+              text: const Text('Share'),
+              onPressed: Flyout.of(context).close,
+            ),
+            MenuFlyoutItem(
+              leading: const Icon(FluentIcons.copy),
+              text: const Text('Copy'),
+              onPressed: Flyout.of(context).close,
+            ),
+            MenuFlyoutItem(
+              leading: const Icon(FluentIcons.delete),
+              text: const Text('Delete'),
+              onPressed: Flyout.of(context).close,
+            ),
+            const MenuFlyoutSeparator(),
+            MenuFlyoutItem(
+              text: const Text('Rename'),
+              onPressed: Flyout.of(context).close,
+            ),
+            MenuFlyoutItem(
+              text: const Text('Select'),
+              onPressed: Flyout.of(context).close,
+            ),
+            const MenuFlyoutSeparator(),
+            MenuFlyoutSubItem(
+              text: const Text('Send to'),
+              items: (_) => [
+                MenuFlyoutItem(
+                  text: const Text('Bluetooth'),
+                  onPressed: Flyout.of(context).close,
+                ),
+                MenuFlyoutItem(
+                  text: const Text('Desktop (shortcut)'),
+                  onPressed: Flyout.of(context).close,
+                ),
+                MenuFlyoutSubItem(
+                  text: const Text('Compressed file'),
+                  items: (context) => [
+                    MenuFlyoutItem(
+                      text: const Text('Compress and email'),
+                      onPressed: Flyout.of(context).close,
+                    ),
+                    MenuFlyoutItem(
+                      text: const Text('Compress to .7z'),
+                      onPressed: Flyout.of(context).close,
+                    ),
+                    MenuFlyoutItem(
+                      text: const Text('Compress to .zip'),
+                      onPressed: Flyout.of(context).close,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ]);
+        },
+      );
+    },
   )
 )''',
           child: Row(children: [
@@ -175,7 +276,7 @@ class _Flyout2ScreenState extends State<Flyout2Screen> with PageMixin {
               controller: menuController,
               child: Button(
                 child: const Text('Options'),
-                onPressed: () async {
+                onPressed: () {
                   menuController.showFlyout(
                     autoModeConfiguration: FlyoutAutoConfiguration(
                       preferredMode: placementMode,
@@ -185,67 +286,63 @@ class _Flyout2ScreenState extends State<Flyout2Screen> with PageMixin {
                     dismissWithEsc: dismissWithEsc,
                     navigatorKey: rootNavigatorKey.currentState,
                     builder: (context) {
-                      return MenuFlyout(
-                        items: [
-                          MenuFlyoutItem(
-                            leading: const Icon(FluentIcons.share),
-                            text: const Text('Share'),
-                            onPressed: Flyout.of(context).close,
-                          ),
-                          MenuFlyoutItem(
-                            leading: const Icon(FluentIcons.copy),
-                            text: const Text('Copy'),
-                            onPressed: Flyout.of(context).close,
-                          ),
-                          MenuFlyoutItem(
-                            leading: const Icon(FluentIcons.delete),
-                            text: const Text('Delete'),
-                            onPressed: Flyout.of(context).close,
-                          ),
-                          const MenuFlyoutSeparator(),
-                          MenuFlyoutItem(
-                            text: const Text('Rename'),
-                            onPressed: Flyout.of(context).close,
-                          ),
-                          MenuFlyoutItem(
-                            text: const Text('Select'),
-                            onPressed: Flyout.of(context).close,
-                          ),
-                          const MenuFlyoutSeparator(),
-                          MenuFlyoutSubItem(
-                            text: const Text('Send to'),
-                            items: (context) {
-                              return [
+                      return MenuFlyout(items: [
+                        MenuFlyoutItem(
+                          leading: const Icon(FluentIcons.share),
+                          text: const Text('Share'),
+                          onPressed: Flyout.of(context).close,
+                        ),
+                        MenuFlyoutItem(
+                          leading: const Icon(FluentIcons.copy),
+                          text: const Text('Copy'),
+                          onPressed: Flyout.of(context).close,
+                        ),
+                        MenuFlyoutItem(
+                          leading: const Icon(FluentIcons.delete),
+                          text: const Text('Delete'),
+                          onPressed: Flyout.of(context).close,
+                        ),
+                        const MenuFlyoutSeparator(),
+                        MenuFlyoutItem(
+                          text: const Text('Rename'),
+                          onPressed: Flyout.of(context).close,
+                        ),
+                        MenuFlyoutItem(
+                          text: const Text('Select'),
+                          onPressed: Flyout.of(context).close,
+                        ),
+                        const MenuFlyoutSeparator(),
+                        MenuFlyoutSubItem(
+                          text: const Text('Send to'),
+                          items: (_) => [
+                            MenuFlyoutItem(
+                              text: const Text('Bluetooth'),
+                              onPressed: Flyout.of(context).close,
+                            ),
+                            MenuFlyoutItem(
+                              text: const Text('Desktop (shortcut)'),
+                              onPressed: Flyout.of(context).close,
+                            ),
+                            MenuFlyoutSubItem(
+                              text: const Text('Compressed file'),
+                              items: (context) => [
                                 MenuFlyoutItem(
-                                  text: const Text('Bluetooth'),
+                                  text: const Text('Compress and email'),
                                   onPressed: Flyout.of(context).close,
                                 ),
                                 MenuFlyoutItem(
-                                  text: const Text('Desktop (shortcut)'),
+                                  text: const Text('Compress to .7z'),
                                   onPressed: Flyout.of(context).close,
                                 ),
-                                MenuFlyoutSubItem(
-                                  text: const Text('Compressed file'),
-                                  items: (context) => [
-                                    MenuFlyoutItem(
-                                      text: const Text('Compress and email'),
-                                      onPressed: Flyout.of(context).close,
-                                    ),
-                                    MenuFlyoutItem(
-                                      text: const Text('Compress to .7z'),
-                                      onPressed: Flyout.of(context).close,
-                                    ),
-                                    MenuFlyoutItem(
-                                      text: const Text('Compress to .zip'),
-                                      onPressed: Flyout.of(context).close,
-                                    ),
-                                  ],
+                                MenuFlyoutItem(
+                                  text: const Text('Compress to .zip'),
+                                  onPressed: Flyout.of(context).close,
                                 ),
-                              ];
-                            },
-                          ),
-                        ],
-                      );
+                              ],
+                            ),
+                          ],
+                        ),
+                      ]);
                     },
                   );
                 },
@@ -259,8 +356,9 @@ class _Flyout2ScreenState extends State<Flyout2Screen> with PageMixin {
         description(
           content: const Text(
             'The command bar flyout lets you provide users with easy access '
-            'to common tasks by showing commands in a floating toolbar related'
-            ' to an element on your UI canvas.',
+            'to common tasks by showing commands in a floating toolbar related '
+            'to an element on your UI canvas. Use your right mouse button to '
+            'open the context menu.',
           ),
         ),
         CardHighlight(
@@ -338,47 +436,68 @@ return GestureDetector(
                 ancestor: Navigator.of(context).context.findRenderObject(),
               );
 
-              contextController.showFlyout(
-                barrierColor: Colors.black.withOpacity(0.1),
-                position: position,
-                builder: (context) {
-                  return FlyoutContent(
-                    child: SizedBox(
-                      width: 130,
-                      child: CommandBar(
-                        isCompact: true,
-                        primaryItems: [
-                          CommandBarButton(
-                            icon: const Icon(FluentIcons.add_favorite),
-                            label: const Text('Favorite'),
-                            onPressed: () {},
-                          ),
-                          CommandBarButton(
-                            icon: const Icon(FluentIcons.copy),
-                            label: const Text('Copy'),
-                            onPressed: () {},
-                          ),
-                          CommandBarButton(
-                            icon: const Icon(FluentIcons.share),
-                            label: const Text('Share'),
-                            onPressed: () {},
-                          ),
-                          CommandBarButton(
-                            icon: const Icon(FluentIcons.save),
-                            label: const Text('Save'),
-                            onPressed: () {},
-                          ),
-                          CommandBarButton(
-                            icon: const Icon(FluentIcons.delete),
-                            label: const Text('Delete'),
-                            onPressed: () {},
-                          ),
-                        ],
+              void showFlyout(Offset position) {
+                contextController.showFlyout(
+                  barrierColor: Colors.black.withOpacity(0.1),
+                  position: position,
+                  barrierRecognizer: TapGestureRecognizer()
+                    ..onTap = () {
+                      Navigator.of(context).pop();
+                    }
+                    ..onSecondaryTapUp = (d) {
+                      Navigator.of(context).pop();
+
+                      final box = Navigator.of(context)
+                          .context
+                          .findRenderObject() as RenderBox;
+                      final position = box.localToGlobal(
+                        d.localPosition,
+                        ancestor: box,
+                      );
+
+                      showFlyout(position);
+                    },
+                  builder: (context) {
+                    return FlyoutContent(
+                      child: SizedBox(
+                        width: 130,
+                        child: CommandBar(
+                          isCompact: true,
+                          primaryItems: [
+                            CommandBarButton(
+                              icon: const Icon(FluentIcons.add_favorite),
+                              label: const Text('Favorite'),
+                              onPressed: () {},
+                            ),
+                            CommandBarButton(
+                              icon: const Icon(FluentIcons.copy),
+                              label: const Text('Copy'),
+                              onPressed: () {},
+                            ),
+                            CommandBarButton(
+                              icon: const Icon(FluentIcons.share),
+                              label: const Text('Share'),
+                              onPressed: () {},
+                            ),
+                            CommandBarButton(
+                              icon: const Icon(FluentIcons.save),
+                              label: const Text('Save'),
+                              onPressed: () {},
+                            ),
+                            CommandBarButton(
+                              icon: const Icon(FluentIcons.delete),
+                              label: const Text('Delete'),
+                              onPressed: () {},
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
-              );
+                    );
+                  },
+                );
+              }
+
+              showFlyout(position);
             },
             child: FlyoutTarget(
               key: contextAttachKey,
